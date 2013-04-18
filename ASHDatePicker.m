@@ -21,35 +21,57 @@
     NSDictionary *bindingInfo = [self infoForBinding:NSValueBinding];
     [[bindingInfo valueForKey:NSObservedObjectKey] setValue:self.dateValue
                                                  forKeyPath:[bindingInfo valueForKey:NSObservedKeyPathKey]];
+    
+    if ([self target] && [self action]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        [[self target] performSelector:[self action] withObject:self];
+#pragma clang diagnostic pop
+    }
 }
 
--(void)dateAction
-{
-    controller.datePicker.dateValue = self.dateValue;
-}
-
-- (void)awakeFromNib
+- (void)commonInit
 {
     controller = [[ASHDatePickerController alloc] init];
-    self.action = @selector(dateAction);
     controller.datePicker.action = @selector(popoverDateAction);
     [controller.datePicker bind:NSValueBinding toObject:self withKeyPath:@"dateValue" options:nil];
+    
     
     _popover = [[NSPopover alloc] init];
     _popover.contentViewController = controller;
     _popover.behavior = NSPopoverBehaviorSemitransient;
     
     _preferredPopoverEdge = NSMaxXEdge;
+    
+    [self addObserver:self forKeyPath:@"dateValue" options:0 context:NULL];
 }
 
 - (id)initWithFrame:(NSRect)frame
 {
-    self = [super initWithFrame:frame];
-    if (self) {
-        // Initialization code here.   
+    if ( (self = [super initWithFrame:frame]) ) {
+        [self commonInit];
     }
-    
     return self;
+}
+
+- (id)initWithCoder:(NSCoder *)aDecoder
+{
+    if ( (self = [super initWithCoder:aDecoder]) ) {
+        [self commonInit];
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    [self removeObserver:self forKeyPath:@"dateValue"];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+{
+    if (object == self && [keyPath isEqualToString:@"dateValue"]) {
+        controller.datePicker.dateValue = self.dateValue;
+    }
 }
 
 - (void)mouseDown:(NSEvent *)theEvent
