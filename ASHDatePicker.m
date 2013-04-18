@@ -80,6 +80,13 @@
     return [super resignFirstResponder];
 }
 
+- (void)cancelOperation:(id)sender
+{
+    if ([_popover isShown]) {
+        [_popover performClose:nil];
+    }
+}
+
 @end
 
 @implementation ASHDatePickerController
